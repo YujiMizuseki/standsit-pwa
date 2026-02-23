@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>設定 - 立ち座り運動アプリ</title>
+  <link rel="manifest" href="/standsit-pwa/manifest.json" />
+  <meta name="theme-color" content="#fff8f5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #fff8f5;
+      --bg2:     #ffeee6;
+      --primary: #e8613a;
+      --primary2:#f4956e;
+      --accent:  #f0a070;
+      --text:    #3a2820;
+      --text-mid:#7a5a4e;
+      --text-dim:#b09080;
+      --white:   #ffffff;
+      --shadow:  rgba(232,97,58,0.18);
+    }
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    body {
+      background:
+        radial-gradient(ellipse at 80% 0%, rgba(240,160,112,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse at 10% 100%, rgba(232,97,58,0.10) 0%, transparent 50%),
+        var(--bg);
+    }
+    .container {
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 0 22px 60px;
+    }
+    /* ヘッダー */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 0 24px;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 10px 16px;
+      background: var(--white);
+      border: none; border-radius: 100px;
+      color: var(--text); font-size: 15px; font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer; text-decoration: none;
+      box-shadow: 0 2px 10px var(--shadow);
+    }
+    .header-title {
+      font-size: 22px; font-weight: 900; color: var(--text);
+    }
+    /* セクション */
+    .section {
+      background: var(--white);
+      border-radius: 24px;
+      padding: 24px 22px;
+      box-shadow: 0 4px 20px var(--shadow);
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 14px; font-weight: 700;
+      color: var(--text-dim);
+      letter-spacing: .08em;
+      margin-bottom: 18px;
+      text-transform: uppercase;
+    }
+    .section-desc {
+      font-size: 14px;
+      color: var(--text-mid);
+      line-height: 1.8;
+      padding: 14px 16px;
+      background: var(--bg2);
+      border-radius: 14px;
+      margin-top: -4px;
+      margin-bottom: 0;
+    }
+    .section-desc .icon { margin-right: 4px; }
+    /* 感度カード */
+    .sensitivity-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sens-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 18px;
+      border-radius: 18px;
+      border: 3px solid transparent;
+      background: var(--bg);
+      cursor: pointer;
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
+    }
+    .sens-card:active { transform: scale(.97); }
+    .sens-card.selected {
+      border-color: var(--primary);
+      background: #fff5f2;
+      box-shadow: 0 4px 18px var(--shadow);
+    }
+    .sens-icon {
+      font-size: 30px;
+      width: 52px; height: 52px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 14px;
+      background: var(--white);
+      flex-shrink: 0;
+    }
+    .sens-text { flex: 1; }
+    .sens-name { font-size: 17px; font-weight: 900; color: var(--text); margin-bottom: 4px; }
+    .sens-sub  { font-size: 13px; color: var(--text-mid); line-height: 1.5; }
+    .sens-check {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 3px solid rgba(58,40,32,.2);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all .2s;
+      font-size: 14px;
+    }
+    .sens-card.selected .sens-check {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    /* オンライン/オフライン */
+    .mode-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .net-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 18px;
+      border-radius: 18px;
+      border: 3px solid transparent;
+      background: var(--bg);
+      cursor: pointer;
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
+    }
+    .net-card:active { transform: scale(.97); }
+    .net-card.selected {
+      border-color: var(--primary);
+      background: #fff5f2;
+      box-shadow: 0 4px 18px var(--shadow);
+    }
+    .net-icon {
+      font-size: 28px;
+      width: 52px; height: 52px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 14px;
+      background: var(--white);
+      flex-shrink: 0;
+    }
+    .net-text { flex: 1; }
+    .net-name { font-size: 17px; font-weight: 900; color: var(--text); margin-bottom: 4px; }
+    .net-sub  { font-size: 13px; color: var(--text-mid); line-height: 1.5; }
+    .net-check {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 3px solid rgba(58,40,32,.2);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all .2s;
+      font-size: 14px;
+    }
+    .net-card.selected .net-check {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .offline-notice {
+      display: none;
+      padding: 14px 16px;
+      background: #fff8e6;
+      border: 2px solid #f0c040;
+      border-radius: 14px;
+      font-size: 13px;
+      color: #6a4a00;
+      line-height: 1.8;
+    }
+    .offline-notice.show { display: block; }
+    /* 保存ボタン */
+    .save-btn {
+      width: 100%;
+      padding: 20px;
+      border: none;
+      border-radius: 100px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color: #fff;
+      font-size: 18px; font-weight: 900;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      box-shadow: 0 4px 20px var(--shadow);
+      transition: all .2s;
+      margin-top: 8px;
+    }
+    .save-btn:active { transform: scale(.97); }
+    /* トースト */
+    .toast {
+      position: fixed; top: 80px; left: 50%;
+      transform: translateX(-50%) translateY(-16px);
+      background: var(--white); border: 2px solid var(--primary);
+      color: var(--primary); padding: 14px 28px;
+      border-radius: 100px; font-size: 16px; font-weight: 700;
+      z-index: 200; opacity: 0; transition: all .3s ease;
+      pointer-events: none; white-space: nowrap;
+      box-shadow: 0 4px 20px var(--shadow);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <a href="index.html" class="back-btn">← もどる</a>
+      <div class="header-title">⚙️ 設定</div>
+    </div>
+
+    <!-- カメラ配置ガイド -->
+    <div class="section">
+      <div class="section-title">📷 カメラの配置</div>
+      <div class="section-desc">
+        <span class="icon">💡</span>
+        <strong>カメラはなるべく全身が入る距離まで遠ざけて</strong>置いてください。<br>
+        頭からつま先まで映ると、より正確に動作を検出できます。
+      </div>
+    </div>
+
+    <!-- 感度設定 -->
+    <div class="section">
+      <div class="section-title">🎯 モーションキャプチャーの感度</div>
+      <div class="sensitivity-cards">
+        <div class="sens-card" id="sens-easy" onclick="selectSens('easy')">
+          <div class="sens-icon">😊</div>
+          <div class="sens-text">
+            <div class="sens-name">優しめ</div>
+            <div class="sens-sub">少しの動きでもカウントされます<br>運動に慣れていない方向け</div>
+          </div>
+          <div class="sens-check">✓</div>
+        </div>
+        <div class="sens-card" id="sens-normal" onclick="selectSens('normal')">
+          <div class="sens-icon">👍</div>
+          <div class="sens-text">
+            <div class="sens-name">標準</div>
+            <div class="sens-sub">一般的な判定基準です<br>ほとんどの方におすすめ</div>
+          </div>
+          <div class="sens-check">✓</div>
+        </div>
+        <div class="sens-card" id="sens-strict" onclick="selectSens('strict')">
+          <div class="sens-icon">💪</div>
+          <div class="sens-text">
+            <div class="sens-name">厳しめ</div>
+            <div class="sens-sub">しっかり立ち・座りを完了しないとカウントされません<br>初期設定</div>
+          </div>
+          <div class="sens-check">✓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- オンライン/オフラインモード -->
+    <div class="section">
+      <div class="section-title">🌐 アプリのモード</div>
+      <div class="mode-cards">
+        <div class="net-card" id="mode-online" onclick="selectNetMode('online')">
+          <div class="net-icon">☁️</div>
+          <div class="net-text">
+            <div class="net-name">オンラインモード</div>
+            <div class="net-sub">インターネット接続時に最新バージョンへ<br>自動でアップデートされます</div>
+          </div>
+          <div class="net-check">✓</div>
+        </div>
+        <div class="net-card" id="mode-offline" onclick="selectNetMode('offline')">
+          <div class="net-icon">✈️</div>
+          <div class="net-text">
+            <div class="net-name">オフラインモード</div>
+            <div class="net-sub">通信を使わずに動作します<br>データ節約・機内モードでも使えます</div>
+          </div>
+          <div class="net-check">✓</div>
+        </div>
+      </div>
+      <div class="offline-notice" id="offlineNotice">
+        ⚠️ <strong>オフラインモードでは自動更新されません。</strong><br>
+        新しい機能や修正は、オンラインモードに切り替えてアプリを再起動することで反映されます。
+      </div>
+    </div>
+
+    <button class="save-btn" onclick="saveSettings()">✓ 設定を保存する</button>
+
+  </div>
+
+  <div class="toast" id="toast">✓ 設定を保存しました！</div>
+
+  <script>
+    // 現在の設定を読み込む
+    const settings = JSON.parse(localStorage.getItem('standsit-settings') || '{}');
+    let currentSens    = settings.sensitivity || 'strict';
+    let currentNetMode = settings.netMode     || 'online';
+
+    function selectSens(val) {
+      currentSens = val;
+      document.querySelectorAll('.sens-card').forEach(c => c.classList.remove('selected'));
+      document.getElementById('sens-' + val).classList.add('selected');
+    }
+
+    function selectNetMode(val) {
+      currentNetMode = val;
+      document.querySelectorAll('.net-card').forEach(c => c.classList.remove('selected'));
+      document.getElementById('mode-' + val).classList.add('selected');
+      document.getElementById('offlineNotice').classList.toggle('show', val === 'offline');
+    }
+
+    function saveSettings() {
+      localStorage.setItem('standsit-settings', JSON.stringify({
+        sensitivity: currentSens,
+        netMode: currentNetMode,
+      }));
+      // トースト
+      const t = document.getElementById('toast');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    // 初期表示
+    selectSens(currentSens);
+    selectNetMode(currentNetMode);
+  </script>
+</body>
+</html>
