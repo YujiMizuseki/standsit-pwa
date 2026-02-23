@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>記録 - 立ち座り運動アプリ</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#fff8f5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #fff8f5;
+      --bg2:      #ffeee6;
+      --primary:  #e8613a;
+      --primary2: #f4956e;
+      --speed:    #d97b00;
+      --speed2:   #f0a030;
+      --text:     #3a2820;
+      --text-mid: #7a5a4e;
+      --text-dim: #b09080;
+      --white:    #ffffff;
+      --shadow:   rgba(232,97,58,0.14);
+    }
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .page { max-width: 480px; margin: 0 auto; padding: 0 20px 80px; }
+    /* ヘッダー */
+    .header {
+      display: flex; align-items: center;
+      padding: 20px 0 16px; gap: 14px;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 12px 18px;
+      background: var(--white); border: 1.5px solid rgba(58,40,32,.15);
+      border-radius: 100px; color: var(--text-mid);
+      font-size: 15px; font-weight: 700; text-decoration: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,.06);
+      white-space: nowrap;
+    }
+    .header-title { font-size: 22px; font-weight: 900; color: var(--text); }
+    /* タブ */
+    .tabs {
+      display: flex; gap: 10px; margin-bottom: 24px;
+      background: var(--bg2); border-radius: 18px; padding: 5px;
+    }
+    .tab {
+      flex: 1; padding: 13px;
+      border: none; border-radius: 13px;
+      font-size: 16px; font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer; color: var(--text-mid);
+      background: transparent; transition: all .2s;
+    }
+    .tab.speed.active {
+      background: var(--white); color: var(--speed);
+      box-shadow: 0 2px 12px rgba(217,123,0,.18);
+    }
+    .tab.count.active {
+      background: var(--white); color: var(--primary);
+      box-shadow: 0 2px 12px var(--shadow);
+    }
+    /* サマリーカード */
+    .summary-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 24px; }
+    .summary-card {
+      background: var(--white); border-radius: 18px;
+      padding: 16px 10px; text-align: center;
+      box-shadow: 0 2px 12px var(--shadow);
+    }
+    .summary-value {
+      font-size: 22px; font-weight: 900; line-height: 1; color: var(--text);
+    }
+    .summary-value.sv-speed { color: var(--speed); }
+    .summary-value.sv-count { color: var(--primary); }
+    .summary-label { font-size: 12px; color: var(--text-dim); margin-top: 7px; font-weight: 700; }
+    /* グラフ */
+    .section-title {
+      font-size: 14px; font-weight: 900; color: var(--text-mid);
+      margin-bottom: 10px; letter-spacing: .03em;
+    }
+    .chart-card {
+      background: var(--white); border-radius: 20px;
+      padding: 18px 14px 14px; margin-bottom: 28px;
+      box-shadow: 0 2px 16px var(--shadow);
+    }
+    .chart-sub-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .chart-sub { font-size: 12px; color: var(--text-dim); font-weight: 700; }
+    .chart-wrapper { position: relative; height: 180px; }
+    /* 履歴リスト */
+    .history-list { display: flex; flex-direction: column; gap: 12px; }
+    .history-item {
+      background: var(--white); border-radius: 18px;
+      padding: 16px 18px; display: flex; align-items: center; gap: 14px;
+      box-shadow: 0 2px 12px var(--shadow);
+      animation: fadeUp .35s ease both;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .h-main-sec {
+      font-size: 26px; font-weight: 900;
+      color: var(--speed); line-height: 1; min-width: 64px; text-align: center;
+    }
+    .h-main-reps {
+      font-size: 30px; font-weight: 900;
+      color: var(--primary); line-height: 1; min-width: 50px; text-align: center;
+    }
+    .h-main-unit { font-size: 13px; color: var(--text-dim); text-align: center; margin-top: 3px; font-weight: 700; }
+    .h-detail { flex: 1; }
+    .h-date { font-size: 15px; font-weight: 700; color: var(--text); }
+    .h-sub  { font-size: 13px; color: var(--text-dim); margin-top: 3px; }
+    .badge-best {
+      font-size: 12px; padding: 5px 10px;
+      border-radius: 100px; font-weight: 900; white-space: nowrap;
+    }
+    .badge-best.speed { background: rgba(217,123,0,.12); color: var(--speed); border: 1.5px solid rgba(217,123,0,.3); }
+    .badge-best.count { background: rgba(232,97,58,.1);  color: var(--primary); border: 1.5px solid rgba(232,97,58,.28); }
+    /* 空状態 */
+    .empty-state { text-align: center; padding: 56px 20px; }
+    .empty-icon  { font-size: 52px; margin-bottom: 16px; }
+    .empty-title { font-size: 20px; font-weight: 900; color: var(--text); margin-bottom: 10px; }
+    .empty-desc  { font-size: 15px; color: var(--text-mid); line-height: 1.7; }
+    .btn-goto {
+      display: inline-block; margin-top: 24px;
+      padding: 16px 36px; border: none; border-radius: 100px;
+      font-size: 17px; font-weight: 900;
+      font-family: 'Noto Sans JP', sans-serif;
+      text-decoration: none; box-shadow: 0 4px 18px var(--shadow);
+    }
+    .btn-goto.speed { background: linear-gradient(135deg, var(--speed), var(--speed2)); color: #fff; }
+    .btn-goto.count { background: linear-gradient(135deg, var(--primary), var(--primary2)); color: #fff; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <a href="index.html" class="back-btn">← もどる</a>
+    <h1 class="header-title">📊 これまでの記録</h1>
+  </div>
+
+  <!-- タブ -->
+  <div class="tabs">
+    <button class="tab speed active" id="tabSpeed" onclick="switchTab('speed')">⏱️ タイムに挑戦</button>
+    <button class="tab count"        id="tabCount" onclick="switchTab('count')">🔢 回数を数える</button>
+  </div>
+
+  <div id="mainContent"></div>
+</div>
+
+<script>
+  let currentTab = 'speed';
+
+  function getHistory(mode) {
+    const all = JSON.parse(localStorage.getItem('standsit-history') || '[]');
+    return all.filter(h => (h.mode || 'count') === mode);
+  }
+
+  function getIsoDate(item) {
+    if (item.isoDate) return item.isoDate;
+    const now = new Date();
+    const parts = (item.date || '').split(' ')[0].split('/');
+    if (parts.length === 2)
+      return now.getFullYear() + '-' + parts[0].padStart(2,'0') + '-' + parts[1].padStart(2,'0');
+    return 'unknown';
+  }
+
+  function getSeconds(item) {
+    if (typeof item.seconds === 'number') return item.seconds;
+    return parseFloat(item.time || '0');
+  }
+
+  function formatSec(sec) {
+    const s = Math.floor(sec), m = Math.floor(s / 60);
+    return m > 0 ? m + '分' + (s % 60) + '秒' : sec.toFixed(2) + '秒';
+  }
+
+  function formatDate(isoDate) {
+    if (isoDate === 'unknown') return '?/?';
+    const p = isoDate.split('-');
+    return parseInt(p[1]) + '/' + parseInt(p[2]);
+  }
+
+  function switchTab(mode) {
+    currentTab = mode;
+    document.getElementById('tabSpeed').classList.toggle('active', mode === 'speed');
+    document.getElementById('tabCount').classList.toggle('active', mode === 'count');
+    renderContent(mode);
+  }
+
+  function renderContent(mode) {
+    const history   = getHistory(mode);
+    const container = document.getElementById('mainContent');
+    const isSpeed   = mode === 'speed';
+
+    if (history.length === 0) {
+      container.innerHTML =
+        '<div class="empty-state">' +
+        '<div class="empty-icon">' + (isSpeed ? '⏱️' : '🔢') + '</div>' +
+        '<div class="empty-title">まだ記録がありません</div>' +
+        '<div class="empty-desc">' + (isSpeed ? 'タイムに挑戦' : '回数を数える') + 'モードで<br>運動してみましょう！</div>' +
+        '<a href="measure.html" class="btn-goto ' + mode + '">' +
+        (isSpeed ? '⏱️ タイムに挑戦する' : '🔢 回数を数える') + '</a></div>';
+      return;
+    }
+
+    // サマリー
+    let summaryHTML = '';
+    if (isSpeed) {
+      const bestSec = Math.min(...history.map(h => getSeconds(h)));
+      const avgSec  = history.reduce((a,h) => a + getSeconds(h), 0) / history.length;
+      summaryHTML = mkSummaryRow([
+        { cls:'sv-speed', val: history.length + '回', label: '挑戦回数' },
+        { cls:'sv-speed', val: bestSec.toFixed(2) + 's', label: '最速タイム' },
+        { cls:'sv-speed', val: avgSec.toFixed(1) + 's',  label: '平均タイム' },
+      ]);
+    } else {
+      const bestReps  = Math.max(...history.map(h => h.reps || 0));
+      const totalReps = history.reduce((a,h) => a + (h.reps || 0), 0);
+      const sessions  = history.length;
+      summaryHTML = mkSummaryRow([
+        { cls:'sv-count', val: sessions + '回',    label: '記録回数' },
+        { cls:'sv-count', val: bestReps + '回',    label: '最多回数' },
+        { cls:'sv-count', val: totalReps + '回',   label: '合計回数' },
+      ]);
+    }
+
+    function mkSummaryRow(cards) {
+      return '<div class="summary-row">' + cards.map(c =>
+        '<div class="summary-card"><div class="summary-value ' + c.cls + '">' + c.val + '</div>' +
+        '<div class="summary-label">' + c.label + '</div></div>'
+      ).join('') + '</div>';
+    }
+
+    // グラフ用：日別集計
+    const dailyMap = {};
+    history.forEach(item => {
+      const d = getIsoDate(item);
+      if (isSpeed) {
+        const val = getSeconds(item);
+        if (!dailyMap[d] || val < getSeconds(dailyMap[d])) dailyMap[d] = item;
+      } else {
+        if (!dailyMap[d]) dailyMap[d] = Object.assign({}, item, { _totalReps: item.reps || 0 });
+        else dailyMap[d]._totalReps += (item.reps || 0);
+      }
+    });
+
+    const dailyBest  = Object.values(dailyMap).sort((a,b) => getIsoDate(a).localeCompare(getIsoDate(b)));
+    const chartLabels = dailyBest.map(d => formatDate(getIsoDate(d)));
+    const chartVals   = dailyBest.map(d => isSpeed ? getSeconds(d) : (d._totalReps || d.reps || 0));
+
+    const borderColor = isSpeed ? '#d97b00' : '#e8613a';
+    const bgColor     = isSpeed ? 'rgba(217,123,0,.08)' : 'rgba(232,97,58,.08)';
+    const yUnit       = isSpeed ? 's' : '回';
+    const graphTitle  = isSpeed ? '日別 最短タイム' : '日別 累計回数';
+
+    const chartHTML =
+      '<div class="section-title">' + graphTitle + 'のグラフ</div>' +
+      '<div class="chart-card">' +
+      '<div class="chart-sub-row"><span class="chart-sub">縦：' + (isSpeed ? 'タイム（秒）' : '回数') + '</span>' +
+      '<span class="chart-sub">横：日付</span></div>' +
+      '<div class="chart-wrapper"><canvas id="histChart"></canvas></div></div>';
+
+    // 履歴リスト
+    const bestTsSet = new Set(dailyBest.filter(d => d.timestamp).map(d => d.timestamp));
+    const dailyBestValMap = {};
+    dailyBest.forEach(d => {
+      dailyBestValMap[getIsoDate(d)] = isSpeed ? getSeconds(d) : (d._totalReps || d.reps || 0);
+    });
+
+    const sorted = [...history].sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+    const itemsHTML = sorted.map((item, i) => {
+      const sec  = getSeconds(item);
+      const reps = item.reps || 0;
+      const iso  = getIsoDate(item);
+      const isBest = item.timestamp
+        ? bestTsSet.has(item.timestamp)
+        : (dailyBestValMap[iso] === (isSpeed ? sec : reps));
+
+      if (isSpeed) {
+        return '<div class="history-item" style="animation-delay:' + (i*.04) + 's">' +
+          '<div><div class="h-main-sec">' + sec.toFixed(2) + '</div><div class="h-main-unit">秒</div></div>' +
+          '<div class="h-detail"><div class="h-date">' + item.date + '</div>' +
+          '<div class="h-sub">10回達成</div></div>' +
+          (isBest ? '<div class="badge-best speed">その日最速</div>' : '') + '</div>';
+      } else {
+        return '<div class="history-item" style="animation-delay:' + (i*.04) + 's">' +
+          '<div><div class="h-main-reps">' + reps + '</div><div class="h-main-unit">回</div></div>' +
+          '<div class="h-detail"><div class="h-date">' + item.date + '</div>' +
+          '<div class="h-sub">計測時間：' + formatSec(sec) + '</div></div>' +
+          (isBest ? '<div class="badge-best count">その日最多</div>' : '') + '</div>';
+      }
+    }).join('');
+
+    const listHTML = '<div class="section-title">すべての記録</div>' +
+      '<div class="history-list">' + itemsHTML + '</div>';
+
+    container.innerHTML = summaryHTML + chartHTML + listHTML;
+
+    // Chart.js
+    const chartCtx = document.getElementById('histChart').getContext('2d');
+    new Chart(chartCtx, {
+      type: 'line',
+      data: {
+        labels: chartLabels,
+        datasets: [{
+          label: graphTitle,
+          data: chartVals,
+          borderColor: borderColor,
+          backgroundColor: bgColor,
+          borderWidth: 3,
+          pointBackgroundColor: borderColor,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          fill: true,
+          tension: 0.4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#fff',
+            borderColor: borderColor,
+            borderWidth: 2,
+            titleColor: '#b09080',
+            bodyColor: borderColor,
+            bodyFont: { family:'Noto Sans JP', size:16, weight:'900' },
+            titleFont: { family:'Noto Sans JP', size:12 },
+            callbacks: { label: ctx => ctx.parsed.y + yUnit }
+          }
+        },
+        scales: {
+          x: {
+            grid:  { color:'rgba(180,120,90,.1)' },
+            ticks: { color:'#b09080', font:{ family:'Noto Sans JP', size:12, weight:'700' } }
+          },
+          y: {
+            grid:        { color:'rgba(180,120,90,.1)' },
+            beginAtZero: !isSpeed,
+            reverse:     isSpeed,
+            ticks: {
+              color:'#b09080',
+              font:{ family:'Noto Sans JP', size:12, weight:'700' },
+              callback: val => val + yUnit
+            }
+          }
+        }
+      }
+    });
+  }
+
+  renderContent('speed');
+
+  // Service Worker自動更新
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'activated') {
+            window.location.reload();
+          }
+        });
+      });
+    });
+  }
+</script>
+</body>
+</html>

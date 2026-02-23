@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>計測 - 立ち座り運動アプリ</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#fff8f5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #fff8f5;
+      --bg2:      #ffeee6;
+      --primary:  #e8613a;
+      --primary2: #f4956e;
+      --speed:    #d97b00;
+      --speed2:   #f0a030;
+      --count:    #e8613a;
+      --count2:   #f4956e;
+      --text:     #3a2820;
+      --text-mid: #7a5a4e;
+      --text-dim: #b09080;
+      --white:    #ffffff;
+      --danger:   #cc3333;
+      --shadow:   rgba(232,97,58,0.15);
+    }
+    html, body {
+      height: 100%;
+      background: #000;
+      color: var(--text);
+      font-family: 'Noto Sans JP', sans-serif;
+      overflow: hidden;
+    }
+    /* ===== 起動前スクリーン ===== */
+    #startScreen {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 100; padding: 36px 28px;
+      overflow-y: auto;
+    }
+    #startScreen.hidden { display: none; }
+    .s-icon { font-size: 56px; margin-bottom: 10px; }
+    .s-title { font-size: 24px; font-weight: 900; color: var(--text); text-align: center; margin-bottom: 8px; }
+    .s-desc  { font-size: 15px; color: var(--text-mid); text-align: center; line-height: 1.8; margin-bottom: 30px; }
+    /* モード選択カード */
+    .mode-cards { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+    .mode-card {
+      display: flex; align-items: center; gap: 16px;
+      padding: 22px 20px; border-radius: 22px;
+      border: 3px solid transparent;
+      background: var(--white);
+      box-shadow: 0 3px 16px var(--shadow);
+      cursor: pointer;
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
+    }
+    .mode-card:active { transform: scale(.97); }
+    .mode-card.speed { border-color: rgba(217,123,0,.2); }
+    .mode-card.speed:hover, .mode-card.speed.selected {
+      border-color: var(--speed); background: #fffbf0;
+      box-shadow: 0 6px 24px rgba(217,123,0,.2);
+    }
+    .mode-card.count { border-color: rgba(232,97,58,.2); }
+    .mode-card.count:hover, .mode-card.count.selected {
+      border-color: var(--count); background: #fff5f2;
+      box-shadow: 0 6px 24px rgba(232,97,58,.18);
+    }
+    .mc-icon {
+      font-size: 38px; flex-shrink: 0;
+      width: 64px; height: 64px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 18px; background: var(--bg2);
+    }
+    .mc-text { flex: 1; }
+    .mc-name { font-size: 19px; font-weight: 900; color: var(--text); margin-bottom: 4px; }
+    .mc-sub  { font-size: 14px; color: var(--text-mid); line-height: 1.5; }
+    .mc-badge {
+      font-size: 12px; font-weight: 700; padding: 4px 12px;
+      border-radius: 100px; flex-shrink: 0;
+    }
+    .mc-badge.speed { background: rgba(217,123,0,.15); color: var(--speed); border: 1.5px solid rgba(217,123,0,.4); }
+    .mc-badge.count { background: rgba(232,97,58,.12); color: var(--count); border: 1.5px solid rgba(232,97,58,.35); }
+    .btn-launch {
+      width: 100%; max-width: 360px;
+      padding: 20px; border: none; border-radius: 100px;
+      font-size: 20px; font-weight: 900;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer; transition: all .2s;
+      opacity: .3; pointer-events: none;
+      box-shadow: 0 4px 20px var(--shadow);
+    }
+    .btn-launch.ready { opacity: 1; pointer-events: auto; }
+    .btn-launch.speed-ready { background: linear-gradient(135deg, var(--speed), var(--speed2)); color: var(--white); }
+    .btn-launch.count-ready { background: linear-gradient(135deg, var(--count), var(--count2)); color: var(--white); }
+    .back-link {
+      margin-top: 16px;
+      display: flex; align-items: center; gap: 6px;
+      padding: 12px 20px;
+      background: var(--white); border: 1.5px solid rgba(58,40,32,.15);
+      border-radius: 100px; color: var(--text-mid);
+      font-size: 15px; font-weight: 700; text-decoration: none;
+    }
+    /* ===== カメラビュー ===== */
+    #videoContainer { position: fixed; inset: 0; background: #000; }
+    #video { width: 100%; height: 100%; object-fit: cover; }
+    #canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .overlay-gradient {
+      position: fixed; inset: 0; pointer-events: none; z-index: 10;
+      background: linear-gradient(to bottom,
+        rgba(0,0,0,.55) 0%, transparent 25%,
+        transparent 50%, rgba(0,0,0,.85) 100%);
+    }
+    /* ===== 上部バー ===== */
+    .top-bar {
+      position: fixed; top: 0; left: 0; right: 0;
+      display: flex; align-items: center;
+      padding: 16px 18px; z-index: 20;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 10px 16px;
+      background: rgba(255,255,255,.9);
+      border: none; border-radius: 100px;
+      color: var(--text); font-size: 15px; font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer; text-decoration: none;
+      box-shadow: 0 2px 12px rgba(0,0,0,.15);
+    }
+    .page-title {
+      flex: 1; text-align: center;
+      font-size: 16px; font-weight: 900;
+      color: var(--white);
+      text-shadow: 0 1px 6px rgba(0,0,0,.5);
+    }
+    .mode-tag {
+      display: inline-block; font-size: 12px;
+      padding: 2px 10px; border-radius: 100px;
+      margin-left: 6px; font-weight: 700; vertical-align: middle;
+    }
+    .mode-tag.speed { background: rgba(217,123,0,.85); color: #fff; }
+    .mode-tag.count { background: rgba(232,97,58,.85); color: #fff; }
+    .flip-btn {
+      padding: 10px 14px;
+      background: rgba(255,255,255,.9);
+      border: none; border-radius: 100px;
+      color: var(--text); font-size: 15px;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      box-shadow: 0 2px 12px rgba(0,0,0,.15);
+    }
+    /* ===== 中央表示 ===== */
+    .center-display {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 20; text-align: center; pointer-events: none;
+    }
+    .big-number {
+      font-size: clamp(90px, 24vw, 130px);
+      font-weight: 900; line-height: 1;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: transform .1s cubic-bezier(.34,1.56,.64,1);
+      text-shadow: 0 4px 20px rgba(0,0,0,.5);
+    }
+    .big-number.pulse { transform: scale(1.12); }
+    .big-number.speed-col { color: #ffe066; }
+    .big-number.count-col { color: #ffffff; }
+    .big-label {
+      font-size: 16px; font-weight: 700;
+      color: rgba(255,255,255,.75);
+      letter-spacing: .1em; margin-top: 6px;
+      text-shadow: 0 1px 6px rgba(0,0,0,.4);
+    }
+    .sub-info {
+      margin-top: 10px; font-size: 16px; font-weight: 700;
+      color: rgba(255,255,255,.65);
+      text-shadow: 0 1px 6px rgba(0,0,0,.4);
+    }
+    /* ===== 状態バッジ ===== */
+    .state-badge {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, 80px);
+      z-index: 20; padding: 10px 22px;
+      border-radius: 100px; font-size: 16px; font-weight: 700;
+      transition: all .3s ease;
+      background: rgba(255,255,255,.85);
+      color: var(--text-mid);
+      box-shadow: 0 2px 12px rgba(0,0,0,.2);
+    }
+    .state-badge.sitting {
+      background: rgba(255,255,255,.9); color: #cc3333;
+    }
+    .state-badge.standing {
+      background: rgba(232,97,58,.9); color: #fff;
+    }
+    /* ===== 完了オーバーレイ ===== */
+    #completeOverlay {
+      position: fixed; inset: 0;
+      background: rgba(255,248,245,.97);
+      z-index: 50; display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px; padding: 40px 32px;
+    }
+    #completeOverlay.show { display: flex; }
+    .co-icon  { font-size: 68px; }
+    .co-title { font-size: 28px; font-weight: 900; color: var(--text); }
+    .co-result {
+      font-size: 56px; font-weight: 900;
+      font-family: 'Noto Sans JP', sans-serif;
+      line-height: 1;
+    }
+    .co-result.speed-col { color: var(--speed); }
+    .co-result.count-col { color: var(--count); }
+    .co-sub   { font-size: 16px; color: var(--text); margin-bottom: 8px; text-align: center; line-height: 1.6; }
+    .co-btns { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 320px; }
+    .cbtn {
+      width: 100%; padding: 18px;
+      border: none; border-radius: 100px;
+      font-size: 18px; font-weight: 900;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer; text-align: center; text-decoration: none;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cbtn-save { background: linear-gradient(135deg, var(--count), var(--count2)); color: #fff; box-shadow: 0 4px 18px var(--shadow); }
+    .cbtn-save:disabled { opacity: .5; cursor: default; }
+    .cbtn-retry {
+      background: var(--white); color: var(--text);
+      border: 2px solid rgba(58,40,32,.2);
+      box-shadow: 0 2px 10px rgba(0,0,0,.06);
+    }
+    .cbtn-home {
+      background: transparent; color: var(--text-mid);
+      font-size: 15px; padding: 12px;
+      font-weight: 700;
+    }
+    /* ===== 下部コントロール ===== */
+    .bottom-controls {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 16px 22px 40px; z-index: 20;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    /* 半透明白背景パネル */
+    .controls-panel {
+      background: rgba(255,255,255,.92);
+      border-radius: 24px 24px 0 0;
+      padding: 20px 20px 0;
+      box-shadow: 0 -4px 24px rgba(0,0,0,.1);
+      margin: -16px -22px 0;
+      padding: 20px 22px 0;
+      transition: background .3s ease, padding .3s ease;
+    }
+    /* 計測中は半透明に縮小 */
+    .controls-panel.measuring {
+      background: rgba(0,0,0,.08);
+      padding: 10px 22px 0;
+    }
+    .controls-panel.measuring .timer-display { font-size: 24px; color: #fff; }
+    .controls-panel.measuring .timer-label   { color: rgba(255,255,255,.6); margin-bottom: 6px; }
+    .controls-panel.measuring .btn           { padding: 12px; font-size: 15px; }
+    .controls-panel.measuring .btn-reset     { padding: 12px 14px; font-size: 14px; }
+    .controls-panel.measuring .btn-home      { padding: 12px 10px; font-size: 13px; }
+    .timer-display {
+      text-align: center;
+      font-size: 36px; font-weight: 900;
+      color: var(--text); line-height: 1;
+    }
+    .timer-display.speed-col { color: var(--speed); }
+    /* 完了オーバーレイ表示中は下のタイマーを隠す */
+    #completeOverlay.show ~ .bottom-controls .timer-display,
+    #completeOverlay.show ~ * .timer-display { color: transparent; }
+    .timer-label {
+      text-align: center; font-size: 13px; color: var(--text-dim);
+      margin-top: 2px; margin-bottom: 12px;
+    }
+    .measuring-indicator {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; font-size: 15px; font-weight: 700; color: var(--count);
+      margin-bottom: 4px;
+    }
+    .measuring-indicator.sp { color: var(--speed); }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: currentColor;
+      animation: blink 1s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+    .btn-row { display: flex; gap: 12px; }
+    .btn {
+      flex: 1; padding: 18px; border: none; border-radius: 18px;
+      font-size: 18px; font-weight: 900;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer; transition: all .18s cubic-bezier(.34,1.56,.64,1);
+    }
+    .btn:active { transform: scale(.96); }
+    .btn-sc  { background: linear-gradient(135deg, var(--count), var(--count2)); color: #fff; box-shadow: 0 4px 16px var(--shadow); }
+    .btn-ss  { background: linear-gradient(135deg, var(--speed), var(--speed2)); color: #fff; box-shadow: 0 4px 16px rgba(217,123,0,.25); }
+    .btn-stop { background: linear-gradient(135deg, var(--danger), #e05555); color: #fff; box-shadow: 0 4px 16px rgba(204,51,51,.25); }
+    .btn-reset {
+      flex: 0 0 auto; padding: 18px 20px;
+      background: var(--bg2); color: var(--text-mid);
+      font-size: 16px; border: none;
+    }
+    .btn-save {
+      background: linear-gradient(135deg, #5b9bd5, #3a7cc1);
+      color: #fff; box-shadow: 0 4px 16px rgba(58,124,193,.25);
+    }
+    .btn-save:disabled { opacity: .55; cursor: default; }
+    .btn-home {
+      flex: 0 0 auto; padding: 18px 16px;
+      background: var(--bg2); color: var(--text-mid);
+      font-size: 15px; font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif;
+      border: none; border-radius: 18px;
+      text-decoration: none; display: flex; align-items: center; justify-content: center;
+    }
+    /* カウントダウンオーバーレイ */
+    #countdownOverlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 60;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #countdownOverlay.show { display: flex; }
+    .countdown-number {
+      font-size: 140px;
+      font-weight: 900;
+      color: #fff;
+      font-family: 'Noto Sans JP', sans-serif;
+      line-height: 1;
+      animation: countPop .8s cubic-bezier(.34,1.56,.64,1);
+      text-shadow: 0 4px 30px rgba(0,0,0,.5);
+    }
+    .countdown-label {
+      font-size: 22px;
+      font-weight: 700;
+      color: rgba(255,255,255,.8);
+      margin-top: 12px;
+      letter-spacing: .1em;
+    }
+    @keyframes countPop {
+      from { transform: scale(1.6); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    /* トースト */
+    .save-toast {
+      position: fixed; top: 90px; left: 50%;
+      transform: translateX(-50%) translateY(-16px);
+      background: var(--white); border: 2px solid var(--count);
+      color: var(--count); padding: 14px 28px;
+      border-radius: 100px; font-size: 16px; font-weight: 700;
+      z-index: 200; opacity: 0; transition: all .3s ease;
+      pointer-events: none; white-space: nowrap;
+      box-shadow: 0 4px 20px var(--shadow);
+    }
+    .save-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- 起動前スクリーン（モード選択） -->
+<div id="startScreen">
+  <div class="s-icon">📷</div>
+  <h2 class="s-title">どちらで運動しますか？</h2>
+  <p class="s-desc">カメラで体全体が映るように<br>スマートフォンを置いてください</p>
+
+  <div class="mode-cards">
+    <div class="mode-card speed" id="modeSpeedCard" onclick="selectMode('speed')">
+      <div class="mc-icon">⏱️</div>
+      <div class="mc-text">
+        <div class="mc-name">タイムに挑戦</div>
+        <div class="mc-sub">10回を何秒でできるか<br>タイムを計ります</div>
+      </div>
+      <div class="mc-badge speed">タイム</div>
+    </div>
+    <div class="mode-card count" id="modeCountCard" onclick="selectMode('count')">
+      <div class="mc-icon">🔢</div>
+      <div class="mc-text">
+        <div class="mc-name">回数を数える</div>
+        <div class="mc-sub">何回できるか数えます<br>自分のペースでどうぞ</div>
+      </div>
+      <div class="mc-badge count">回数</div>
+    </div>
+  </div>
+
+  <button class="btn-launch" id="launchBtn" onclick="launchCamera()">カメラを起動する</button>
+  <a href="index.html" class="back-link">← もどる</a>
+</div>
+
+<!-- カメラビュー -->
+<div id="videoContainer">
+  <video id="video" playsinline autoplay muted></video>
+  <canvas id="canvas"></canvas>
+</div>
+<div class="overlay-gradient"></div>
+
+<!-- トースト -->
+<div class="save-toast" id="saveToast">✓ 記録しました！</div>
+
+<!-- 上部バー -->
+<div class="top-bar">
+  <a href="index.html" class="back-btn">← もどる</a>
+  <div class="page-title" id="pageTitle">運動計測</div>
+  <button class="flip-btn" id="flipBtn">📷 切替</button>
+</div>
+
+<!-- 中央表示 -->
+<div class="center-display">
+  <div class="big-number count-col" id="bigNumber">0</div>
+  <div class="big-label" id="bigLabel">回</div>
+  <div class="sub-info" id="subInfo"></div>
+</div>
+
+<!-- 状態バッジ -->
+<div class="state-badge" id="stateBadge">待機中</div>
+
+<!-- カウントダウンオーバーレイ -->
+<div id="countdownOverlay">
+  <div class="countdown-number" id="countdownNum">3</div>
+  <div class="countdown-label">用意してください...</div>
+</div>
+
+<!-- 完了オーバーレイ（スピードモード） -->
+<div id="completeOverlay">
+  <div class="co-icon">🎉</div>
+  <div class="co-title">10回 完了！</div>
+  <div class="co-result speed-col" id="coResult">--</div>
+  <div class="co-sub" id="coSub"></div>
+  <div class="co-btns">
+    <button class="cbtn cbtn-save" id="overlaySaveBtn">📊 記録する</button>
+    <button class="cbtn cbtn-retry" id="overlayRetryBtn">もう一度やる</button>
+    <a href="index.html" class="cbtn cbtn-home">← トップにもどる</a>
+  </div>
+</div>
+
+<!-- 下部コントロール -->
+<div class="bottom-controls">
+  <div class="controls-panel">
+    <div class="timer-display" id="timerDisplay">00:00</div>
+    <div class="timer-label" id="timerLabel">経過時間</div>
+    <div class="measuring-indicator" id="measuringIndicator" style="display:none;">
+      <div class="dot"></div><span>計測中です</span>
+    </div>
+    <div class="btn-row" style="margin-bottom: 12px;">
+      <button class="btn btn-sc" id="startBtn">計測スタート</button>
+      <button class="btn btn-reset" id="resetBtn">リセット</button>
+    </div>
+    <div class="btn-row" id="saveRow" style="display:none; margin-bottom: 12px;">
+      <button class="btn btn-save" id="saveBtn">📊 記録する</button>
+      <a href="index.html" class="btn-home">← TOP</a>
+    </div>
+  </div>
+</div>
+
+<!-- MediaPipe -->
+<script src="/mediapipe/camera_utils/camera_utils.js"></script>
+<script src="/mediapipe/drawing_utils/drawing_utils.js"></script>
+<script src="/mediapipe/pose/pose.js"></script>
+<script>
+  // Service Worker登録／自動更新（オンラインモードのみ）
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      const appSettings = JSON.parse(localStorage.getItem('standsit-settings') || '{}');
+      const netMode = appSettings.netMode || 'online';
+      if (netMode === 'online') {
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'activated') {
+              window.location.reload();
+            }
+          });
+        });
+      }
+    });
+  }
+
+  const video              = document.getElementById('video');
+  const canvas             = document.getElementById('canvas');
+  const ctx                = canvas.getContext('2d');
+  const startScreen        = document.getElementById('startScreen');
+  const bigNumberEl        = document.getElementById('bigNumber');
+  const bigLabelEl         = document.getElementById('bigLabel');
+  const subInfoEl          = document.getElementById('subInfo');
+  const stateBadge         = document.getElementById('stateBadge');
+  const timerDisplay       = document.getElementById('timerDisplay');
+  const measuringIndicator = document.getElementById('measuringIndicator');
+  const startBtn           = document.getElementById('startBtn');
+  const resetBtn           = document.getElementById('resetBtn');
+  const flipBtn            = document.getElementById('flipBtn');
+  const saveRow            = document.getElementById('saveRow');
+  const saveBtn            = document.getElementById('saveBtn');
+  const saveToast          = document.getElementById('saveToast');
+  const pageTitleEl        = document.getElementById('pageTitle');
+  const completeOverlay    = document.getElementById('completeOverlay');
+  const coResult           = document.getElementById('coResult');
+  const coSub              = document.getElementById('coSub');
+  const overlaySaveBtn     = document.getElementById('overlaySaveBtn');
+  const overlayRetryBtn    = document.getElementById('overlayRetryBtn');
+
+  let selectedMode = null, repCount = 0, isStanding = false;
+  let isMeasuring = false, startTime = null, elapsedSec = 0;
+  let timerInterval = null, sessionSaved = false;
+  let facingMode = 'user', mpCamera = null;
+
+  const SPEED_TARGET = 10;
+
+  // 感度設定を読み込む
+  function getSensThresholds() {
+    const s = JSON.parse(localStorage.getItem('standsit-settings') || '{}');
+    const sens = s.sensitivity || 'strict';
+    if (sens === 'easy')   return { stand: 140, sit: 120 };  // 優しめ
+    if (sens === 'normal') return { stand: 150, sit: 110 };  // 標準
+    return { stand: 160, sit: 100 };                          // 厳しめ（初期値）
+  }
+  let { stand: STAND_THRESHOLD, sit: SIT_THRESHOLD } = getSensThresholds();
+
+  function selectMode(mode) {
+    selectedMode = mode;
+    document.getElementById('modeSpeedCard').classList.toggle('selected', mode === 'speed');
+    document.getElementById('modeCountCard').classList.toggle('selected', mode === 'count');
+    const btn = document.getElementById('launchBtn');
+    btn.className = 'btn-launch ready ' + mode + '-ready';
+  }
+
+  function launchCamera() {
+    if (!selectedMode) return;
+    startScreen.classList.add('hidden');
+    applyModeUI();
+    initPose();
+  }
+
+  function applyModeUI() {
+    if (selectedMode === 'speed') {
+      pageTitleEl.innerHTML = '運動計測 <span class="mode-tag speed">タイム</span>';
+      bigNumberEl.className = 'big-number speed-col';
+      bigNumberEl.textContent = SPEED_TARGET;
+      bigLabelEl.textContent = '回 のこり';
+      timerDisplay.classList.add('speed-col');
+      startBtn.className = 'btn btn-ss';
+      measuringIndicator.classList.add('sp');
+    } else {
+      pageTitleEl.innerHTML = '運動計測 <span class="mode-tag count">回数</span>';
+      bigNumberEl.className = 'big-number count-col';
+      bigNumberEl.textContent = '0';
+      bigLabelEl.textContent = '回';
+      startBtn.className = 'btn btn-sc';
+    }
+  }
+
+  function initPose() {
+    const pose = new Pose({ locateFile: f => '/mediapipe/pose/' + f });
+    pose.setOptions({ modelComplexity:1, smoothLandmarks:true, minDetectionConfidence:.5, minTrackingConfidence:.5 });
+    pose.onResults(onResults);
+    mpCamera = new Camera(video, {
+      onFrame: async () => { await pose.send({ image: video }); },
+      width: 640, height: 480, facingMode,
+    });
+    mpCamera.start();
+  }
+
+  flipBtn.addEventListener('click', () => {
+    facingMode = facingMode === 'user' ? 'environment' : 'user';
+    if (mpCamera) { mpCamera.stop(); mpCamera = null; }
+    initPose();
+  });
+
+  function onResults(results) {
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!results.poseLandmarks) return;
+
+    const lc = selectedMode === 'speed' ? 'rgba(255,200,50,.6)' : 'rgba(244,149,110,.6)';
+    const dc = selectedMode === 'speed' ? 'rgba(255,200,50,.95)' : 'rgba(244,149,110,.95)';
+    drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color:lc, lineWidth:3 });
+    drawLandmarks(ctx, results.poseLandmarks, { color:dc, radius:4, lineWidth:1 });
+
+    if (!isMeasuring) return;
+
+    const lm = results.poseLandmarks;
+    const ka = (calcAngle(lm[23],lm[25],lm[27]) + calcAngle(lm[24],lm[26],lm[28])) / 2;
+    let newState = isStanding ? 'standing' : 'sitting';
+
+    if (!isStanding && ka > STAND_THRESHOLD) {
+      isStanding = true; newState = 'standing';
+    } else if (isStanding && ka < SIT_THRESHOLD) {
+      isStanding = false; repCount++; newState = 'sitting';
+      bigNumberEl.classList.add('pulse');
+      setTimeout(() => bigNumberEl.classList.remove('pulse'), 150);
+
+      if (selectedMode === 'speed') {
+        const rem = SPEED_TARGET - repCount;
+        bigNumberEl.textContent = rem > 0 ? rem : 0;
+        subInfoEl.textContent   = '完了：' + repCount + ' / ' + SPEED_TARGET + ' 回';
+        if (repCount >= SPEED_TARGET) { onSpeedComplete(); return; }
+      } else {
+        bigNumberEl.textContent = repCount;
+      }
+    }
+
+    stateBadge.className   = 'state-badge ' + newState;
+    stateBadge.textContent = newState === 'sitting' ? '座っています' : '立っています';
+  }
+
+  function calcAngle(a, b, c) {
+    const r = Math.atan2(c.y-b.y, c.x-b.x) - Math.atan2(a.y-b.y, a.x-b.x);
+    let angle = Math.abs(r * 180 / Math.PI);
+    if (angle > 180) angle = 360 - angle;
+    return angle;
+  }
+
+  function onSpeedComplete() {
+    isMeasuring = false;
+    clearInterval(timerInterval);
+    measuringIndicator.style.display = 'none';
+    const finalSec = (Date.now() - startTime) / 1000;
+    elapsedSec = finalSec;
+    timerDisplay.textContent = formatTime(finalSec);
+    coResult.textContent = finalSec.toFixed(2) + ' 秒';
+    coSub.textContent    = 'よくできました！ 10回を ' + finalSec.toFixed(2) + ' 秒で達成！';
+    completeOverlay.classList.add('show');
+    timerDisplay.style.visibility = 'hidden';
+    overlaySaveBtn.disabled    = false;
+    overlaySaveBtn.textContent = '📊 記録する';
+    sessionSaved = false;
+  }
+
+  overlayRetryBtn.addEventListener('click', () => { completeOverlay.classList.remove('show'); doReset(); });
+  overlaySaveBtn.addEventListener('click', () => {
+    if (sessionSaved) return;
+    saveRecord();
+    overlaySaveBtn.textContent = '✓ 記録しました！';
+    overlaySaveBtn.disabled    = true;
+  });
+
+  function formatTime(sec) {
+    if (selectedMode === 'speed') {
+      const s = Math.floor(sec), ms = Math.floor((sec - s) * 10), m = Math.floor(s / 60);
+      return String(m).padStart(2,'0') + ':' + String(s%60).padStart(2,'0') + '.' + ms;
+    }
+    return String(Math.floor(sec/60)).padStart(2,'0') + ':' + String(Math.floor(sec)%60).padStart(2,'0');
+  }
+
+  const countdownOverlay = document.getElementById('countdownOverlay');
+  const countdownNum = document.getElementById('countdownNum');
+
+  function startCountdown(callback) {
+    let count = 3;
+    countdownNum.textContent = count;
+    // アニメーションを毎回リセット
+    function forceAnim(el) {
+      el.style.animation = 'none';
+      el.offsetHeight; // reflow
+      el.style.animation = '';
+    }
+    countdownOverlay.classList.add('show');
+    forceAnim(countdownNum);
+    const iv = setInterval(() => {
+      count--;
+      if (count <= 0) {
+        clearInterval(iv);
+        countdownOverlay.classList.remove('show');
+        callback();
+      } else {
+        countdownNum.textContent = count;
+        forceAnim(countdownNum);
+      }
+    }, 1000);
+  }
+
+  function beginMeasuring() {
+    isMeasuring = true; sessionSaved = false;
+    // 感度を再読み込み（設定変更に対応）
+    const th = getSensThresholds();
+    STAND_THRESHOLD = th.stand;
+    SIT_THRESHOLD   = th.sit;
+
+    if (selectedMode === 'speed') {
+      repCount = 0; isStanding = false; elapsedSec = 0;
+      bigNumberEl.textContent = SPEED_TARGET;
+      subInfoEl.textContent   = '';
+      startTime = Date.now();
+      timerInterval = setInterval(() => {
+        timerDisplay.textContent = formatTime((Date.now() - startTime) / 1000);
+      }, 50);
+    } else {
+      startTime = Date.now() - elapsedSec * 1000;
+      timerInterval = setInterval(() => {
+        elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+        timerDisplay.textContent = formatTime(elapsedSec);
+      }, 500);
+    }
+    startBtn.textContent = '計測を止める';
+    startBtn.className   = 'btn btn-stop';
+    measuringIndicator.style.display = 'flex';
+    saveRow.style.display = 'none';
+    document.querySelector('.controls-panel').classList.add('measuring');
+  }
+
+  startBtn.addEventListener('click', () => {
+    if (!isMeasuring) {
+      startBtn.disabled = true;
+      startCountdown(() => {
+        startBtn.disabled = false;
+        beginMeasuring();
+      });
+    } else {
+      isMeasuring = false;
+      clearInterval(timerInterval);
+      if (selectedMode === 'speed') elapsedSec = (Date.now() - startTime) / 1000;
+      startBtn.textContent = '計測を再開する';
+      startBtn.className   = selectedMode === 'speed' ? 'btn btn-ss' : 'btn btn-sc';
+      measuringIndicator.style.display = 'none';
+      document.querySelector('.controls-panel').classList.remove('measuring');
+      if (selectedMode === 'count' && repCount > 0) saveRow.style.display = 'flex';
+    }
+  });
+
+  resetBtn.addEventListener('click', () => { completeOverlay.classList.remove('show'); doReset(); });
+
+  function doReset() {
+    isMeasuring = false; sessionSaved = false;
+    repCount = 0; isStanding = false; elapsedSec = 0;
+    clearInterval(timerInterval);
+    timerDisplay.textContent = '00:00';
+    timerDisplay.style.visibility = 'visible';
+    if (selectedMode === 'speed') {
+      bigNumberEl.textContent = SPEED_TARGET; subInfoEl.textContent = '';
+      startBtn.className = 'btn btn-ss';
+    } else {
+      bigNumberEl.textContent = '0';
+      startBtn.className = 'btn btn-sc';
+    }
+    startBtn.textContent = '計測スタート';
+    measuringIndicator.style.display = 'none';
+    document.querySelector('.controls-panel').classList.remove('measuring');
+    saveRow.style.display  = 'none';
+    saveBtn.textContent    = '📊 記録する';
+    saveBtn.disabled       = false;
+    stateBadge.className   = 'state-badge';
+    stateBadge.textContent = '待機中';
+  }
+
+  saveBtn.addEventListener('click', () => {
+    if (sessionSaved) return;
+    saveRecord();
+    saveBtn.textContent = '✓ 記録しました！';
+    saveBtn.disabled    = true;
+  });
+
+  function saveRecord() {
+    if (sessionSaved) return;
+    sessionSaved = true;
+    const history = JSON.parse(localStorage.getItem('standsit-history') || '[]');
+    const now     = new Date();
+    const dateStr = (now.getMonth()+1) + '/' + now.getDate() + ' ' + now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+    history.unshift({
+      date: dateStr, mode: selectedMode, reps: repCount,
+      seconds: parseFloat(elapsedSec.toFixed(2)),
+      time: elapsedSec.toFixed(2),
+      isoDate: now.toISOString().split('T')[0],
+      timestamp: now.getTime(),
+    });
+    if (history.length > 100) history.pop();
+    localStorage.setItem('standsit-history', JSON.stringify(history));
+    saveToast.classList.add('show');
+    setTimeout(() => saveToast.classList.remove('show'), 2500);
+  }
+</script>
+</body>
+</html>

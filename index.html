@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>立ち座り運動アプリ</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#fff8f5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="立ち座り運動" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #fff8f5;
+      --bg2:     #ffeee6;
+      --primary: #e8613a;
+      --primary2:#f4956e;
+      --accent:  #f0a070;
+      --text:    #3a2820;
+      --text-mid:#7a5a4e;
+      --text-dim:#b09080;
+      --white:   #ffffff;
+      --shadow:  rgba(232,97,58,0.18);
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+
+    body {
+      background:
+        radial-gradient(ellipse at 80% 0%, rgba(240,160,112,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse at 10% 100%, rgba(232,97,58,0.10) 0%, transparent 50%),
+        var(--bg);
+    }
+
+    .container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 28px 60px;
+    }
+
+    /* ヘッダー */
+
+    .hero-wrap {
+      text-align: center;
+      margin-bottom: 44px;
+      animation: fadeUp .5s .05s both;
+    }
+
+    .hero-icon {
+      font-size: 72px;
+      line-height: 1;
+      margin-bottom: 18px;
+      display: block;
+      animation: float 3.5s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-7px); }
+    }
+
+    .title {
+      font-size: 30px;
+      font-weight: 900;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: var(--text-mid);
+      line-height: 1.7;
+    }
+
+    /* カード */
+
+    .nav-cards {
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .nav-card {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 26px 26px;
+      background: var(--white);
+      border: 2px solid transparent;
+      border-radius: 24px;
+      text-decoration: none;
+      color: var(--text);
+      box-shadow: 0 4px 20px var(--shadow);
+      transition: all .22s cubic-bezier(.34,1.56,.64,1);
+      animation: fadeUp .5s both;
+    }
+
+    .nav-card:nth-child(1) { animation-delay: .15s; }
+
+    .nav-card:nth-child(2) { animation-delay: .25s; }
+
+    .nav-card:active {
+      transform: scale(.97);
+      box-shadow: 0 2px 10px var(--shadow);
+    }
+
+    .nav-card.primary { border-color: rgba(232,97,58,.25); }
+
+    .nav-card.primary:hover { border-color: var(--primary); box-shadow: 0 8px 32px var(--shadow); }
+
+    .nav-card.secondary { border-color: rgba(240,160,112,.3); }
+
+    .nav-card.secondary:hover { border-color: var(--accent); }
+
+    .card-icon {
+      font-size: 42px;
+      flex-shrink: 0;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 18px;
+      background: var(--bg2);
+    }
+
+    .card-text { flex: 1; }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+
+    .card-desc {
+      font-size: 14px;
+      color: var(--text-mid);
+      line-height: 1.5;
+    }
+
+    .card-arrow {
+      font-size: 22px;
+      color: var(--primary2);
+    }
+
+    /* ホーム画面に追加ボタン */
+
+    #installBtn {
+      display: none;
+      width: 100%;
+      max-width: 360px;
+      margin-top: 18px;
+      padding: 18px;
+      border: 2px solid var(--primary);
+      border-radius: 100px;
+      background: var(--white);
+      color: var(--primary);
+      font-size: 18px;
+      font-weight: 900;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      box-shadow: 0 4px 16px var(--shadow);
+      transition: all .2s;
+      animation: fadeUp .5s .35s both;
+    }
+
+    #installBtn:active { transform: scale(.97); }
+
+    /* iOS向け説明バナー */
+
+    #iosBanner {
+      display: none;
+      width: 100%;
+      max-width: 360px;
+      margin-top: 18px;
+      padding: 16px 20px;
+      background: var(--white);
+      border: 2px solid rgba(232,97,58,.3);
+      border-radius: 20px;
+      font-size: 14px;
+      color: var(--text-mid);
+      line-height: 1.7;
+      text-align: center;
+      box-shadow: 0 4px 16px var(--shadow);
+      animation: fadeUp .5s .35s both;
+    }
+
+    #iosBanner .ios-icon { font-size: 20px; vertical-align: middle; }
+
+    /* 設定ボタン */
+
+    .settings-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 14px;
+      padding: 14px 24px;
+      width: 100%;
+      max-width: 360px;
+      background: var(--white);
+      border: 2px solid rgba(58,40,32,.12);
+      border-radius: 100px;
+      color: var(--text-mid);
+      font-size: 16px; font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif;
+      text-decoration: none;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      transition: all .2s;
+      animation: fadeUp .5s .3s both;
+    }
+
+    .settings-btn:active { transform: scale(.97); }
+
+    .footer {
+      margin-top: 44px;
+      font-size: 13px;
+      color: var(--text-dim);
+      text-align: center;
+      animation: fadeUp .5s .4s both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero-wrap">
+      <span class="hero-icon">🪑</span>
+      <h1 class="title">立ち座り運動<br>アプリ</h1>
+      <p class="subtitle">カメラで運動を自動的に記録します</p>
+    </div>
+
+    <div class="nav-cards">
+      <a class="nav-card primary" href="measure.html">
+        <div class="card-icon">📷</div>
+        <div class="card-text">
+          <div class="card-title">運動を始める</div>
+          <div class="card-desc">カメラで回数を自動で数えます</div>
+        </div>
+        <div class="card-arrow">›</div>
+      </a>
+
+      <a class="nav-card secondary" href="history.html">
+        <div class="card-icon">📊</div>
+        <div class="card-text">
+          <div class="card-title">記録を見る</div>
+          <div class="card-desc">これまでの運動の記録とグラフ</div>
+        </div>
+        <div class="card-arrow">›</div>
+      </a>
+    </div>
+
+    <!-- 設定ボタン -->
+    <a href="settings.html" class="settings-btn">⚙️ 設定</a>
+
+    <!-- Android用インストールボタン -->
+    <button id="installBtn">📲 ホーム画面に追加する</button>
+
+    <!-- iOS用説明バナー -->
+    <div id="iosBanner">
+      <span class="ios-icon">📲</span> ホーム画面に追加するには<br>
+      下の <strong>「共有」</strong> ボタン <span class="ios-icon">⬆️</span> をタップして<br>
+      <strong>「ホーム画面に追加」</strong> を選んでください
+    </div>
+
+    <p class="footer">毎日少しずつ、続けることが大切です 🌸<br><span style="font-size:11px; color: var(--text-dim);">v1.0.7</span></p>
+  </div>
+
+  <script>
+    // Service Worker登録・自動更新（オンラインモードのみ）
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        const appSettings = JSON.parse(localStorage.getItem('standsit-settings') || '{}');
+        const netMode = appSettings.netMode || 'online';
+        if (netMode === 'online') {
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'activated') {
+                window.location.reload();
+              }
+            });
+          });
+        }
+      });
+    }
+
+    // Android: beforeinstallpromptイベントをキャッチ
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('installBtn');
+    const iosBanner  = document.getElementById('iosBanner');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'block';
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        installBtn.style.display = 'none';
+      }
+      deferredPrompt = null;
+    });
+
+    // すでにインストール済みならボタンを隠す
+    window.addEventListener('appinstalled', () => {
+      installBtn.style.display = 'none';
+    });
+
+    // iOS Safari判定 → バナー表示
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+    if (isIos && !isInStandaloneMode) {
+      iosBanner.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

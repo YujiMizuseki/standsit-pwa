@@ -1,0 +1,24 @@
+{
+  "name": "立ち座り運動アプリ",
+  "short_name": "立ち座り運動",
+  "description": "椅子からの立ち座り運動を自動計測するPWAアプリ",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#fff8f5",
+  "theme_color": "#e8613a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
