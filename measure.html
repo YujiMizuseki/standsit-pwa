@@ -553,7 +553,7 @@
   }
 
   function initPose() {
-    const pose = new Pose({ locateFile: f => '/mediapipe/pose/' + f });
+    const pose = new Pose({ locateFile: f => '/standsit-pwa/mediapipe/pose/' + f });
     pose.setOptions({ modelComplexity:1, smoothLandmarks:true, minDetectionConfidence:.5, minTrackingConfidence:.5 });
     pose.onResults(onResults);
     mpCamera = new Camera(video, {
