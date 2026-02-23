@@ -463,7 +463,7 @@
 <script>
   // Service Worker登録／自動更新（オンラインモードのみ）
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').then(reg => {
+    navigator.serviceWorker.register('/standsit-pwa/sw.js').then(reg => {
       const appSettings = JSON.parse(localStorage.getItem('standsit-settings') || '{}');
       const netMode = appSettings.netMode || 'online';
       if (netMode === 'online') {

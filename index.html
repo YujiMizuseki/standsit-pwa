@@ -283,13 +283,13 @@
       <strong>「ホーム画面に追加」</strong> を選んでください
     </div>
 
-    <p class="footer">毎日少しずつ、続けることが大切です 🌸<br><span style="font-size:11px; color: var(--text-dim);">v1.0.8</span></p>
+    <p class="footer">毎日少しずつ、続けることが大切です 🌸<br><span style="font-size:11px; color: var(--text-dim);">v1.0.9</span></p>
   </div>
 
   <script>
     // Service Worker登録・自動更新（オンラインモードのみ）
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then(reg => {
+      navigator.serviceWorker.register('/standsit-pwa/sw.js').then(reg => {
         const appSettings = JSON.parse(localStorage.getItem('standsit-settings') || '{}');
         const netMode = appSettings.netMode || 'online';
         if (netMode === 'online') {
