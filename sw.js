@@ -1,25 +1,28 @@
-const CACHE_NAME = 'standsit-v12';
+const CACHE_NAME = 'standsit-v17';
+
+const BASE = '/standsit-pwa';
 
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/measure.html',
-  '/history.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/measure.html',
+  BASE + '/history.html',
+  BASE + '/settings.html',
+  BASE + '/manifest.json',
+  BASE + '/icon-192.png',
+  BASE + '/icon-512.png',
   // MediaPipe
-  '/mediapipe/camera_utils/camera_utils.js',
-  '/mediapipe/drawing_utils/drawing_utils.js',
-  '/mediapipe/pose/pose.js',
-  '/mediapipe/pose/pose_solution_packed_assets_loader.js',
-  '/mediapipe/pose/pose_solution_simd_wasm_bin.js',
-  '/mediapipe/pose/pose_solution_simd_wasm_bin.wasm',
-  '/mediapipe/pose/pose_solution_wasm_bin.js',
-  '/mediapipe/pose/pose_solution_wasm_bin.wasm',
-  '/mediapipe/pose/pose_solution_simd_wasm_bin.data',
-  '/mediapipe/pose/pose_solution_packed_assets.data',
-  '/mediapipe/pose/pose_web.binarypb',
+  BASE + '/mediapipe/camera_utils/camera_utils.js',
+  BASE + '/mediapipe/drawing_utils/drawing_utils.js',
+  BASE + '/mediapipe/pose/pose.js',
+  BASE + '/mediapipe/pose/pose_solution_packed_assets_loader.js',
+  BASE + '/mediapipe/pose/pose_solution_simd_wasm_bin.js',
+  BASE + '/mediapipe/pose/pose_solution_simd_wasm_bin.wasm',
+  BASE + '/mediapipe/pose/pose_solution_wasm_bin.js',
+  BASE + '/mediapipe/pose/pose_solution_wasm_bin.wasm',
+  BASE + '/mediapipe/pose/pose_solution_simd_wasm_bin.data',
+  BASE + '/mediapipe/pose/pose_solution_packed_assets.data',
+  BASE + '/mediapipe/pose/pose_web.binarypb',
 ];
 
 // インストール時に全ファイルをキャッシュ
@@ -66,7 +69,7 @@ self.addEventListener('fetch', (event) => {
       }).catch(() => {
         // ナビゲーションリクエストの場合はindex.htmlを返す
         if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
+          return caches.match(BASE + '/index.html');
         }
       });
     })
