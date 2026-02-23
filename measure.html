@@ -628,6 +628,8 @@
     document.querySelector('.bottom-controls').style.display = 'none';
     document.querySelector('.top-bar').style.display = 'none';
     document.querySelector('.overlay-gradient').style.display = 'none';
+    document.querySelector('.center-display').style.display = 'none';
+    document.getElementById('stateBadge').style.display = 'none';
     overlaySaveBtn.disabled    = false;
     overlaySaveBtn.textContent = '📊 記録する';
     sessionSaved = false;
@@ -735,6 +737,8 @@
     document.querySelector('.bottom-controls').style.display = '';
     document.querySelector('.top-bar').style.display = '';
     document.querySelector('.overlay-gradient').style.display = '';
+    document.querySelector('.center-display').style.display = '';
+    document.getElementById('stateBadge').style.display = '';
     if (selectedMode === 'speed') {
       bigNumberEl.textContent = SPEED_TARGET; subInfoEl.textContent = '';
       startBtn.className = 'btn btn-ss';
