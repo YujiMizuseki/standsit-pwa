@@ -625,6 +625,9 @@
     coSub.textContent    = 'よくできました！ 10回を ' + finalSec.toFixed(2) + ' 秒で達成！';
     completeOverlay.classList.add('show');
     timerDisplay.style.visibility = 'hidden';
+    document.querySelector('.bottom-controls').style.display = 'none';
+    document.querySelector('.top-bar').style.display = 'none';
+    document.querySelector('.overlay-gradient').style.display = 'none';
     overlaySaveBtn.disabled    = false;
     overlaySaveBtn.textContent = '📊 記録する';
     sessionSaved = false;
@@ -729,6 +732,9 @@
     clearInterval(timerInterval);
     timerDisplay.textContent = '00:00';
     timerDisplay.style.visibility = 'visible';
+    document.querySelector('.bottom-controls').style.display = '';
+    document.querySelector('.top-bar').style.display = '';
+    document.querySelector('.overlay-gradient').style.display = '';
     if (selectedMode === 'speed') {
       bigNumberEl.textContent = SPEED_TARGET; subInfoEl.textContent = '';
       startBtn.className = 'btn btn-ss';
